@@ -1,0 +1,47 @@
+<!-- ARQUIVO: albums.html (COMPLETO) -->
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Álbuns{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+  <h1 class="mb-4">Meus Álbuns</h1>
+
+  <!-- Formulário para criar um novo álbum -->
+  <form method="POST" class="row g-3 mb-4">
+    <div class="col-auto">
+      <input
+        type="text"
+        name="nome_album"
+        class="form-control"
+        placeholder="Nome do álbum"
+        required
+      />
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-primary">
+        Criar Álbum
+      </button>
+    </div>
+  </form>
+
+  <!-- Lista de álbuns -->
+  {% if albums and albums|length > 0 %}
+    <ul class="list-group">
+      {% for album in albums %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <span>{{ album.nome }}</span>
+        <a
+          class="btn btn-sm btn-success"
+          href="{{ url_for('album_detail', album_id=album.id) }}"
+        >
+          Ver Músicas
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-muted">Você ainda não possui álbuns.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Spotmanero - Favoritos{% endblock %}
+
+{% block styles %}
+<style>
+  .list-group-item.selected {
+    background-color: #28a745 !important; /* Verde Bootstrap */
+  }
+  .list-group-item.selected a {
+    color: white !important; /* Texto branco sobre fundo verde */
+    font-weight: bold;
+    font-size: 1.1em;
+  }
+  .list-group-item.selected .bi-heart,
+  .list-group-item.selected .bi-heart-fill {
+    color: white !important; /* Ícones brancos */
+  }
+  .favorite.favorited {
+    color: #dc3545; /* Cor de favorito ativo (opcional) */
+  }
+</style>
+{% endblock %}
+
+{% block sidebar %}
+<h2 class="text-center">Favoritos</h2>
+<ul class="list-group list-group-flush">
+  {% for musica in favoritos %}
+  <li id="{% if musica == musica_selecionada %}selected-music{% endif %}" class="list-group-item bg-transparent d-flex justify-content-between align-items-center {% if musica == musica_selecionada %}selected{% endif %}">
+    <a
+      href="#"
+      class="text-decoration-none {% if musica != musica_selecionada %}text-light{% endif %} song-link"
+      data-musica="{{ musica | urlencode }}"
+      data-artista="{{ artistas_favoritos[musica] if artistas_favoritos and musica in artistas_favoritos else 'Artista Desconhecido' }}"
+      data-cover="{{ url_for('get_cover', cover_name=cover_filenames_favoritos[musica] if cover_filenames_favoritos and musica in cover_filenames_favoritos else 'default.jpg') }}"
+      data-url="{{ url_for('play_musica', nome_arquivo=musica) }}"
+    >
+      {{ musica }}
+    </a>
+    <span class="favorite {% if musica in favoritos %}favorited{% endif %}" data-musica="{{ musica }}">
+      <i class="bi {% if musica in favoritos %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+    </span>
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}
+
+{% block content %}
+<div class="text-center mt-4">
+  <h3 class="mb-3">Favoritos</h3>
+  {% if favoritos %}
+    <ul class="list-group">
+      {% for musica in favoritos %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <a
+          href="#"
+          class="text-decoration-none text-light song-link"
+          data-musica="{{ musica | urlencode }}"
+          data-artista="{{ artistas_favoritos[musica] if artistas_favoritos and musica in artistas_favoritos else 'Artista Desconhecido' }}"
+          data-cover="{{ url_for('get_cover', cover_name=cover_filenames_favoritos[musica] if cover_filenames_favoritos and musica in cover_filenames_favoritos else 'default.jpg') }}"
+          data-url="{{ url_for('play_musica', nome_arquivo=musica) }}"
+        >
+          {{ musica }}
+        </a>
+        <span class="favorite {% if musica in favoritos %}favorited{% endif %}" data-musica="{{ musica }}">
+          <i class="bi {% if musica in favoritos %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-light">Você não tem músicas favoritas.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Spotmanero - Pesquisa{% endblock %}
+
+{% block sidebar %}
+<h2>Resultados da Pesquisa</h2>
+<ul class="list-group list-group-flush">
+  {% if matching_musicas %}
+    {% for musica in matching_musicas %}
+    <li class="list-group-item bg-transparent d-flex justify-content-between align-items-center">
+      <a
+        href="{{ url_for('index', musica_selecionada=musica) }}"
+        class="text-light text-decoration-none"
+      >
+        {{ musica }}
+      </a>
+      <span class="favorite {% if musica in favoritos %}favorited{% endif %}" data-musica="{{ musica }}">
+        <i class="bi {% if musica in favoritos %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+      </span>
+    </li>
+    {% endfor %}
+  {% else %}
+    <li class="list-group-item bg-transparent">Nenhuma música encontrada para "{{ query }}".</li>
+  {% endif %}
+</ul>
+{% endblock %}
+
+{% block content %}
+{% if musica_selecionada %}
+  <div class="text-center">
+    {% if cover_exists %}
+      <img
+        src="{{ url_for('get_cover', cover_name=cover_filename) }}"
+        alt="Capa"
+        class="mb-3"
+        style="max-width: 400px;"
+      >
+    {% endif %}
+    <h3>{{ musica_selecionada }}</h3>
+    <audio
+      controls
+      autoplay
+      class="mt-3 mb-3 w-100"
+      style="max-width:600px;"
+    >
+      <source
+        src="{{ url_for('play_musica', nome_arquivo=musica_selecionada) }}"
+        type="audio/mpeg"
+      />
+      Seu navegador não suporta o elemento de áudio.
+    </audio>
+
+    <!-- Botões: Anterior, Próxima, Aleatório -->
+    <div class="d-flex justify-content-center gap-3">
+      {% if prev_file %}
+      <a
+        href="{{ url_for('search', query=query, musica_selecionada=prev_file) }}"
+        class="btn btn-light"
+      >
+        <i class="bi bi-skip-backward-fill"></i>
+      </a>
+      {% endif %}
+      {% if next_file %}
+      <a
+        href="{{ url_for('search', query=query, musica_selecionada=next_file) }}"
+        class="btn btn-light"
+      >
+        <i class="bi bi-skip-forward-fill"></i>
+      </a>
+      {% endif %}
+      <a
+        href="{{ url_for('random_track') }}"
+        class="btn btn-light"
+      >
+        <i class="bi bi-shuffle"></i>
+      </a>
+    </div>
+  </div>
+{% else %}
+  <h3>Resultados para "{{ query }}"</h3>
+  <!-- Opcional: Instruções ou mensagens adicionais -->
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  $(document).ready(function(){
+    $('.favorite').click(function(){
+      var musica = $(this).data('musica');
+      var icon = $(this).find('i');
+
+      $.ajax({
+        url: '{{ url_for("toggle_favorite") }}',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ musica: musica }),
+        success: function(response){
+          if(response.status === 'added'){
+            icon.removeClass('bi-heart').addClass('bi-heart-fill');
+            $(this).addClass('favorited');
+          } else if(response.status === 'removed'){
+            icon.removeClass('bi-heart-fill').addClass('bi-heart');
+            $(this).removeClass('favorited');
+          }
+        }.bind(this),
+        error: function(xhr){
+          alert(xhr.responseJSON.message);
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}
