@@ -18,6 +18,13 @@ Todos os arquivos estão prontos para uso, basta importar a tabela SQL e executa
 - **Configuração Fácil**: Interface intuitiva para configurar o sistema.
 - **Persistência de Dados**: Banco de dados MySQL para armazenamento seguro.
 
+
+![Login e Signup](imagens/Login.png)
+
+![Tela inicial](imagens/tela-inicial.jpg)
+
+![Download](imagens/download.jpg)
+
 ## Estrutura
 - **Backend**: Desenvolvido com Flask.
 - **Frontend**: Páginas HTML para interação via navegador.
