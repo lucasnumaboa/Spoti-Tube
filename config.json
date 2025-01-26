@@ -1,0 +1,10 @@
+{
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "acore",
+    "password": "acore",
+    "dbname": "usuario",
+    "ffmpeg_path": "C:\\ffmpeg\\bin\\ffmpeg.exe",
+    "file_path": "f:\\spotmanero",
+    "flask_port": 5000
+}

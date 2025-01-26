@@ -2,5 +2,4 @@ Flask
 mysql-connector-python
 yt-dlp
 requests
-tkinter
-ttkbootstrap
+tk
