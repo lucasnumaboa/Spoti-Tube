@@ -5,6 +5,12 @@ Selecione a playlist, adicione a pasta de download e pronto!
 
 Todos os arquivos estão prontos para uso, basta importar a tabela SQL e executar o .exe.
 
+- Instale os requisitos do Python
+- Instale o FFmpeg
+- Instale o MYsql caso não tenha e importe o banco (banco-spoti-tube.sql)
+- Depois de seguir os passos acima basta executar a aplicação
+- Caso queira testar sem instalar os requisitos basta importar o banco SQL e executar o .exe
+
 
 ## Recursos
 - **Gestão de Músicas**: Gerencie favoritos, playlists e arquivos.
