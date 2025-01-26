@@ -22,6 +22,11 @@ Todos os arquivos estão prontos para uso, basta importar a tabela SQL e executa
 - Banco de dados MySQL configurado
 - FFmpeg instalado para suporte ao `yt-dlp`.
 
+- Link para FFmpeg:
+https://www.ffmpeg.org/download.html
+
+Baixe e aponte o caminho da pasta no tkinter
+
 ## Instalação
 1. Clone o repositório:
    ```bash
