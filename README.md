@@ -19,7 +19,7 @@ Todos os arquivos estão prontos para uso, basta importar a tabela SQL e executa
 - **Persistência de Dados**: Banco de dados MySQL para armazenamento seguro.
 
 Login:
-![Login e Signup](imagens/LOGIN.JPG)
+![Login](imagens/Login.JPG)
 
 Tela inicial:
 ![Tela inicial](imagens/tela-inicial.jpg)
