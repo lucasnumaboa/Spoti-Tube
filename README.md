@@ -11,6 +11,9 @@ Todos os arquivos estão prontos para uso, basta importar a tabela SQL e executa
 - Depois de seguir os passos acima basta executar a aplicação
 - Caso queira testar sem instalar os requisitos basta importar o banco SQL e executar o .exe
 
+demo: http://spotmanero.ddns.net:5000/
+login: demo
+senha: demo
 
 ## Recursos
 - **Gestão de Músicas**: Gerencie favoritos, playlists e arquivos.
