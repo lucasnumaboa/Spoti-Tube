@@ -1,0 +1,12 @@
+body {
+  background-color: #121212;
+  color: #fff;
+  margin: 0;
+  padding: 0;
+}
+.navbar {
+  border-bottom: 1px solid #333;
+}
+.list-group-item a:hover {
+  text-decoration: underline;
+}
