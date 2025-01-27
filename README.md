@@ -48,5 +48,5 @@ Baixe e aponte o caminho da pasta no tkinter
 ## Instalação
 1. Clone o repositório:
    ```bash
-   git clone https://github.com/lucasnumaboa/spoti-maneiro.git
-   cd spoti-maneiro
+   git clone https://github.com/lucasnumaboa/spoti-tube.git
+   cd spoti-tube
