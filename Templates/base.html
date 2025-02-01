@@ -18,7 +18,7 @@
   <link
     rel="stylesheet"
     href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css"
-  >
+  />
 
   <style>
     /* Geral */
@@ -27,7 +27,7 @@
       color: #ffffff;
       font-family: 'Roboto', sans-serif;
       margin: 0;
-      padding-bottom: 120px; /* Espaço para o player fixo */
+      padding-bottom: 220px; /* Espaço para a barra fixa do player */
     }
     a {
       color: #1db954;
@@ -56,7 +56,7 @@
     .content-wrapper {
       padding: 20px;
       box-sizing: border-box;
-      min-height: calc(100vh - 56px - 120px);
+      min-height: calc(100vh - 56px - 220px); /* Ajustado para novo player */
     }
 
     /* Esconde a lista de favoritos e painel de playlists por padrão */
@@ -64,7 +64,7 @@
       display: none;
     }
     #playlist-panel {
-      position: fixed;     /* em vez de absolute */
+      position: fixed;
       top: 56px;
       right: 10px;
       width: 240px;
@@ -124,20 +124,24 @@
       border-top: 1px solid #333333;
       padding: 10px 20px;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: space-between;
-      height: 120px;
+      height: 220px; /* Aumentado para acomodar o controle de volume */
       z-index: 1000;
     }
     .player-info {
       display: flex;
       align-items: center;
       gap: 20px;
+      width: 100%;
+      justify-content: space-between;
     }
     .song-info {
       color: #fff;
       display: flex;
       flex-direction: column;
+      flex: 1;
     }
     .song-info h5 {
       margin: 0;
@@ -148,6 +152,14 @@
       font-size: 1rem;
       color: #b3b3b3;
     }
+    .player-controls {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      width: 100%;
+      justify-content: center;
+    }
+    .btn-control,
     .player-controls button,
     .player-controls a {
       background-color: transparent;
@@ -158,6 +170,7 @@
       margin: 0 5px;
       cursor: pointer;
     }
+    .btn-control:hover,
     .player-controls button:hover,
     .player-controls a:hover {
       color: #1db954;
@@ -169,6 +182,64 @@
     }
     .btn-light:hover {
       background-color: #333;
+    }
+
+    /* Barra de Progresso */
+    .progress-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .progress-bar-custom {
+      flex: 1;
+      height: 5px;
+      background-color: #282828;
+      border-radius: 5px;
+      -webkit-appearance: none;
+      appearance: none;
+      cursor: pointer;
+    }
+
+    .progress-bar-custom::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 10px;
+      height: 10px;
+      background: #1db954;
+      border-radius: 50%;
+      cursor: pointer;
+      margin-top: -2.5px; /* Centraliza o thumb */
+    }
+
+    .progress-bar-custom::-moz-range-thumb {
+      width: 10px;
+      height: 10px;
+      background: #1db954;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    #current-time,
+    #total-duration {
+      font-size: 0.9rem;
+      color: #ffffff;
+      min-width: 40px;
+      text-align: center;
+    }
+
+    .player-controls .btn {
+      padding: 0.5rem;
+      font-size: 1.2rem;
+    }
+
+    .volume-control .volume-bar {
+      width: 100px;
+    }
+
+    .volume-bar {
+      width: 100px;
     }
 
     /* Favoritos */
@@ -288,6 +359,10 @@
           <a href="{{ url_for('downloads') }}" class="btn btn-warning me-2">
             Download Playlist YouTube
           </a>
+          <!-- Botão para baixar toda a lista -->
+          <button id="download-all-button" class="btn btn-outline-warning me-2">
+            Baixar toda a lista
+          </button>
           <a href="{{ url_for('logout') }}" class="btn btn-danger">
             Sair
           </a>
@@ -374,6 +449,27 @@
       </div>
     </div>
   </div>
+  
+  <!-- Modal: Adicionar Música à Playlist -->
+  <div class="modal fade" id="addToPlaylistModal" tabindex="-1" aria-labelledby="addToPlaylistModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addToPlaylistModalLabel">Adicionar à Playlist</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <ul class="list-group" id="add-to-playlist-list">
+            <!-- Preenchido dinamicamente com as playlists do usuário -->
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 
   <!-- Painel Flutuante de Playlists -->
   <div id="playlist-panel">
@@ -463,10 +559,10 @@
     {% endif %}
   </div>
 
-  <!-- Player Fixo -->
+  <!-- Player Fixo Atualizado com Controle de Volume e Novos Botões -->
   <div class="fixed-player">
-    {% if musica_selecionada %}
-      <div class="player-info">
+    <div class="player-info">
+      {% if musica_selecionada %}
         <div class="song-info">
           <h5 id="player-song-title">{{ musica_selecionada }}</h5>
           <p id="player-artist">{{ artista_selecionado }}</p>
@@ -480,44 +576,7 @@
         >
           <i class="bi bi-download"></i> Download
         </a>
-      </div>
-      <div class="player-controls">
-        <!-- Botão de Favorito -->
-        <button id="favorite-button" class="btn btn-light me-2">
-          <i class="bi {% if musica_selecionada in favoritos %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
-        </button>
-        <!-- Botão Anterior -->
-        <button id="prev-button" class="btn btn-success rounded-circle">
-          <i class="bi bi-skip-backward-fill"></i>
-        </button>
-        <!-- Player de Áudio -->
-        <audio
-          id="audio-player"
-          controls
-          style="width: 300px; background-color: #1e1e1e; border-radius: 8px;"
-          autoplay
-        >
-          <source
-            src="{{ url_for('play_musica', nome_arquivo=musica_selecionada) }}"
-            type="audio/mpeg"
-          />
-          Seu navegador não suporta o elemento de áudio.
-        </audio>
-        <!-- Botão Próximo -->
-        <button id="next-button" class="btn btn-success rounded-circle">
-          <i class="bi bi-skip-forward-fill"></i>
-        </button>
-        <!-- Shuffle -->
-        <button id="shuffle-button" class="btn btn-success rounded-circle">
-          <i class="bi bi-shuffle"></i>
-        </button>
-        <!-- Repeat -->
-        <button id="repeat-button" class="btn btn-secondary rounded-circle" title="Repetição Automática">
-          <i class="bi bi-arrow-repeat"></i>
-        </button>
-      </div>
-    {% else %}
-      <div class="player-info">
+      {% else %}
         <div class="song-info">
           <h5 id="player-song-title">Nenhuma música selecionada</h5>
           <p id="player-artist"></p>
@@ -525,39 +584,88 @@
         <a
           id="download-button"
           class="btn btn-primary ms-3"
+          href="#"
           download
         >
           <i class="bi bi-download"></i> Download
         </a>
+      {% endif %}
+    </div>
+    <div class="player-controls d-flex align-items-center justify-content-center gap-3">
+      <!-- Botão de Favorito -->
+      <button id="favorite-button" class="btn btn-light" aria-label="Adicionar ou remover favorito">
+        <i class="bi {% if musica_selecionada in favoritos %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+      </button>
+      <!-- Botão Anterior -->
+      <button id="prev-button" class="btn btn-success rounded-circle" aria-label="Música Anterior">
+        <i class="bi bi-skip-backward-fill"></i>
+      </button>
+      <!-- Botão Play/Pause -->
+      <button id="play-pause-button" class="btn btn-control" aria-label="Tocar ou Pausar">
+        <i class="bi {% if musica_selecionada %}bi-pause-fill{% else %}bi-play-fill{% endif %}"></i>
+      </button>
+      <!-- Botão Próximo -->
+      <button id="next-button" class="btn btn-success rounded-circle" aria-label="Próxima Música">
+        <i class="bi bi-skip-forward-fill"></i>
+      </button>
+      <!-- Shuffle -->
+      <button id="shuffle-button" class="btn btn-success rounded-circle" aria-label="Embaralhar">
+        <i class="bi bi-shuffle"></i>
+      </button>
+      <!-- Repeat -->
+      <button id="repeat-button" class="btn btn-secondary rounded-circle {% if isRepeatEnabled %}btn-repeat-active{% endif %}" title="Repetição Automática" aria-label="Repetir">
+        <i class="bi bi-arrow-repeat"></i>
+      </button>
+      
+      <!-- Controle de Volume -->
+      <div class="volume-control d-flex align-items-center gap-2">
+        <i class="bi bi-volume-up"></i>
+        <input
+          type="range"
+          id="volume-bar"
+          min="0"
+          max="100"
+          value="100"
+          class="volume-bar"
+          aria-label="Controle de Volume"
+        />
       </div>
-      <div class="player-controls">
-        <!-- Botão Anterior (sem ação) -->
-        <button id="prev-button" class="btn btn-success rounded-circle disabled">
-          <i class="bi bi-skip-backward-fill"></i>
-        </button>
-        <!-- Player de Áudio -->
-        <audio
-          id="audio-player"
-          controls
-          style="width: 300px; background-color: #1e1e1e; border-radius: 8px;"
-        >
-          <source src="" type="audio/mpeg" />
-          Seu navegador não suporta o elemento de áudio.
-        </audio>
-        <!-- Botão Próximo (sem ação) -->
-        <button id="next-button" class="btn btn-success rounded-circle disabled">
-          <i class="bi bi-skip-forward-fill"></i>
-        </button>
-        <!-- Shuffle -->
-        <button id="shuffle-button" class="btn btn-success rounded-circle">
-          <i class="bi bi-shuffle"></i>
-        </button>
-        <!-- Repeat -->
-        <button id="repeat-button" class="btn btn-secondary rounded-circle" title="Repetição Automática">
-          <i class="bi bi-arrow-repeat"></i>
-        </button>
-      </div>
-    {% endif %}
+      
+      <!-- Novo Botão: Adicionar à Playlist -->
+      <button id="add-to-playlist-button" class="btn btn-primary" aria-label="Adicionar música à playlist">
+        <i class="bi bi-plus-circle"></i> Adicionar
+      </button>
+      
+      <!-- Novo Botão: Excluir Música -->
+      <button id="delete-music-button" class="btn btn-danger" aria-label="Excluir música">
+        <i class="bi bi-trash"></i> Excluir
+      </button>
+    </div>
+    <!-- Barra de Progresso -->
+    <div class="progress-container">
+      <span id="current-time">0:00</span>
+      <input
+        type="range"
+        id="progress-bar"
+        min="0"
+        max="100"
+        value="0"
+        class="progress-bar-custom"
+      />
+      <span id="total-duration">0:00</span>
+    </div>
+    <!-- Player de Áudio (oculto) -->
+    <audio
+      id="audio-player"
+      style="display: none;"
+      autoplay
+    >
+      <source
+        src="{{ url_for('play_musica', nome_arquivo=musica_selecionada) if musica_selecionada else '' }}"
+        type="audio/mpeg"
+      />
+      Seu navegador não suporta o elemento de áudio.
+    </audio>
   </div>
 
   <!-- Context Menu (botão direito) -->
@@ -599,49 +707,11 @@
         </div>
         <div class="modal-body">
           <ul class="list-group" id="existing-playlists">
-            <!-- preenchido via JS -->
+            <!-- Preenchido via JS -->
           </ul>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-light" data-bs-dismiss="modal">Fechar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: Confirmar Exclusão de Música (Lista Normal) -->
-  <div class="modal fade" id="confirmDeleteMusicModal" tabindex="-1" aria-labelledby="confirmDeleteMusicModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="confirmDeleteMusicModalLabel">Confirmar Exclusão</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-        </div>
-        <div class="modal-body">
-          <p>Confirma a exclusão da música <strong id="music-to-delete-name"></strong>?</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-danger" id="confirm-delete-music-btn">Excluir</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: Confirmar Remoção de Música das Playlists -->
-  <div class="modal fade" id="confirmRemoveMusicModal" tabindex="-1" aria-labelledby="confirmRemoveMusicModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="confirmRemoveMusicModalLabel">Confirmar Remoção</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-        </div>
-        <div class="modal-body">
-          <p>Confirma a remoção da música <strong id="music-to-remove-name"></strong> das suas listas?</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-danger" id="confirm-remove-music-btn">Remover</button>
         </div>
       </div>
     </div>
@@ -773,12 +843,15 @@
               if (currentCustomListName === playlistName) {
                 showCustomPlaylist(playlistName);
               }
+              alert('Música adicionada à playlist com sucesso!');
             } else {
               console.error("Erro ao adicionar música na playlist:", resp.message);
+              alert("Erro ao adicionar música na playlist: " + resp.message);
             }
           },
           error: function(err) {
             console.error("Erro ao adicionar música na playlist:", err.responseText);
+            alert("Erro ao adicionar música na playlist: " + err.responseText);
           }
         });
       }
@@ -787,17 +860,73 @@
       function renderUserPlaylists() {
         $('#user-playlists').empty();
         userPlaylists.forEach(pl => {
-          $('#user-playlists').append(`
-            <li 
+          $('#user-playlists').append(
+            `<li 
               class="list-group-item py-1 px-2 text-truncate playlist-item" 
               data-playlist-id="${pl.id}" 
               data-playlist-name="${pl.name}"
             >
               ${pl.name}
-            </li>
-          `);
+            </li>`
+          );
         });
       }
+
+      // ------------------------
+      //  Botão Adicionar à Playlist
+      // ------------------------
+      $(document).on('click', '#add-to-playlist-button', function() {
+        if (!musicaAtual) {
+          alert('Nenhuma música selecionada para adicionar à playlist.');
+          return;
+        }
+        
+        // Abre o modal para selecionar a playlist
+        $('#addToPlaylistModal').modal('show');
+      });
+
+      // Preencher a lista de playlists no modal "Adicionar à Playlist"
+      function populateAddToPlaylistModal() {
+        $('#add-to-playlist-list').empty();
+        if (userPlaylists.length === 0) {
+          $('#add-to-playlist-list').append('<li class="list-group-item text-center text-muted">Nenhuma playlist disponível.</li>');
+        } else {
+          userPlaylists.forEach(pl => {
+            $('#add-to-playlist-list').append(
+              `<li class="list-group-item list-group-item-action choose-add-playlist" data-playlist-name="${pl.name}">
+                ${pl.name}
+              </li>`
+            );
+          });
+        }
+      }
+
+      // Ao abrir o modal, preencher a lista
+      $('#addToPlaylistModal').on('show.bs.modal', function () {
+        populateAddToPlaylistModal();
+      });
+
+      // Clique na playlist dentro do modal para adicionar a música
+      $(document).on('click', '.choose-add-playlist', function() {
+        const playlistName = $(this).data('playlist-name');
+        addMusicToPlaylist(playlistName, musicaAtual);
+        $('#addToPlaylistModal').modal('hide');
+      });
+
+      // ------------------------
+      //  Botão Excluir Música
+      // ------------------------
+      $(document).on('click', '#delete-music-button', function() {
+        if (!musicaAtual) {
+          alert('Nenhuma música selecionada para excluir.');
+          return;
+        }
+        
+        if (confirm(`Tem certeza que deseja excluir a música "${musicaAtual}"? Isso removerá a música de todas as playlists e favoritos.`)) {
+          // Chamar a função para excluir a música no servidor
+          deleteMusicFromServer(musicaAtual);
+        }
+      });
 
       // Exibe a playlist customizada (já temos as músicas em userPlaylists)
       function showCustomPlaylist(playlistName) {
@@ -818,8 +947,8 @@
         } else {
           p.musicas.forEach(m => {
             const selClass = (m === musicaAtual) ? 'selected' : '';
-            html += `
-              <li class="list-group-item ${selClass}" data-musica="${m}">
+            html += 
+              `<li class="list-group-item ${selClass}" data-musica="${m}">
                 <div class="d-flex justify-content-between align-items-center w-100">
                   <a
                     href="#"
@@ -834,8 +963,7 @@
                     <i class="bi bi-heart"></i>
                   </span>
                 </div>
-              </li>
-            `;
+              </li>`;
           });
         }
         html += '</ul>';
@@ -886,6 +1014,10 @@
 
         // Atualizar o ícone de favorito no player
         updateFavoriteButton(musica);
+
+        // Atualizar a barra de volume para refletir o volume atual
+        const currentVolume = $('#volume-bar').val();
+        $('#audio-player')[0].volume = currentVolume / 100;
       }
 
       // Atualizar o ícone de favorito no botão do player
@@ -901,6 +1033,8 @@
       function atualizarPrevNext() {
         const playlist = getActivePlaylist();
         const index = playlist.indexOf(musicaAtual);
+
+        if (!playlist.length) return;
 
         const prevFile = index > 0 ? playlist[index - 1] : playlist[playlist.length - 1];
         const nextFile = (index < playlist.length - 1) ? playlist[index + 1] : playlist[0];
@@ -935,8 +1069,8 @@
                 const audioUrl = $linkOriginal.data('url');
 
                 $('.favorites-list').find('.text-center.text-muted').remove();
-                $('.favorites-list').append(`
-                  <li class="list-group-item d-flex justify-content-between align-items-center" data-musica="${musica}">
+                $('.favorites-list').append(
+                  `<li class="list-group-item d-flex justify-content-between align-items-center" data-musica="${musica}">
                     <a
                       href="#"
                       class="text-decoration-none text-light song-link"
@@ -949,8 +1083,8 @@
                     <span class="favorite favorited" data-musica="${musica}">
                       <i class="bi bi-heart-fill"></i>
                     </span>
-                  </li>
-                `);
+                  </li>`
+                );
                 allFavoritos.push(musica);
               }
             } else if (response.status === "removed") {
@@ -962,13 +1096,14 @@
                 allFavoritos.splice(idx, 1);
               }
               if ($('.favorites-list').find('li').length === 0) {
-                $('.favorites-list').append(`
-                  <li class="list-group-item text-center text-muted">Nenhum favorito adicionado.</li>
-                `);
+                $('.favorites-list').append(
+                  `<li class="list-group-item text-center text-muted">Nenhum favorito adicionado.</li>`
+                );
               }
             }
             atualizarPrevNext();
             updateFavoriteButton(musica);
+            updatePlayerFavoriteButton();
           },
           error: function (xhr) {
             alert("Erro ao alternar favorito: " + xhr.responseText);
@@ -996,6 +1131,21 @@
       });
 
       // ------------------------
+      //  Clique no botão Play/Pause no player
+      // ------------------------
+      $(document).on('click', '#play-pause-button', function () {
+        const audio = $('#audio-player')[0];
+        const icon = $(this).find('i');
+        if (audio.paused) {
+          audio.play();
+          icon.removeClass("bi-play-fill").addClass("bi-pause-fill");
+        } else {
+          audio.pause();
+          icon.removeClass("bi-pause-fill").addClass("bi-play-fill");
+        }
+      });
+
+      // ------------------------
       //  Clique em música
       // ------------------------
       $(document).on('click', '.song-link', function (e) {
@@ -1003,6 +1153,8 @@
         const musica = $(this).data('musica');
         atualizarPlayer(musica);
         atualizarPrevNext();
+        // Atualizar o botão Play/Pause para mostrar Pause
+        $('#play-pause-button i').removeClass("bi-play-fill").addClass("bi-pause-fill");
       });
 
       // ------------------------
@@ -1014,6 +1166,8 @@
           if (prevFile) {
             atualizarPlayer(prevFile);
             atualizarPrevNext();
+            // Atualizar o botão Play/Pause para mostrar Pause
+            $('#play-pause-button i').removeClass("bi-play-fill").addClass("bi-pause-fill");
           }
         }
       });
@@ -1024,6 +1178,8 @@
           if (nextFile) {
             atualizarPlayer(nextFile);
             atualizarPrevNext();
+            // Atualizar o botão Play/Pause para mostrar Pause
+            $('#play-pause-button i').removeClass("bi-play-fill").addClass("bi-pause-fill");
           }
         }
       });
@@ -1036,6 +1192,8 @@
         const randomSong = active[randomIndex];
         atualizarPlayer(randomSong);
         atualizarPrevNext();
+        // Atualizar o botão Play/Pause para mostrar Pause
+        $('#play-pause-button i').removeClass("bi-play-fill").addClass("bi-pause-fill");
       });
 
       // Repeat
@@ -1061,8 +1219,9 @@
           if (nextFile) {
             atualizarPlayer(nextFile);
             atualizarPrevNext();
+            // Atualizar o botão Play/Pause para mostrar Pause
+            $('#play-pause-button i').removeClass("bi-play-fill").addClass("bi-pause-fill");
           }
-          // Não exibe mais o alerta, pois agora a playlist é circular
         }
       });
 
@@ -1143,13 +1302,13 @@
       });
 
       // ------------------------
-      //  Menu de contexto (botão direito)
+      //  Menu de contexto (botão direito) para músicas
       // ------------------------
       $(document).on('contextmenu', '.list-group-item', function(e) {
         e.preventDefault();
         const isPlaylistItem = $(this).hasClass('playlist-item');
         if (isPlaylistItem) {
-          // Não faz nada aqui, pois já temos eventos separados para .playlist-item
+          // Não faz nada aqui para item de playlist
           return;
         }
         rightClickedMusic = $(this).data('musica');
@@ -1159,20 +1318,17 @@
           // Atualiza o menu de contexto para músicas
           const menu = $('#context-menu');
           menu.empty(); // Limpa opções anteriores
-          menu.append(`
-            
-          `);
           // Verifica se estamos visualizando uma playlist
           if (currentCustomListName) {
-            menu.append(`
-              <a href="#" id="remove-music-option">Remover da lista</a>
-            `);
+            menu.append(
+              `<a href="#" id="remove-music-option">Remover da lista</a>`
+            );
           } else {
-            menu.append(`
-			<a href="#" id="create-playlist-option">Criar nova lista</a>
-            <a href="#" id="add-to-playlist-option">Adicionar a lista existente</a>
-            <a href="#" id="delete-music-option">Excluir música</a>
-            `);
+            menu.append(
+              `<a href="#" id="create-playlist-option">Criar nova lista</a>
+               <a href="#" id="add-to-playlist-option">Adicionar a lista existente</a>
+               <a href="#" id="delete-music-option">Excluir música</a>`
+            );
           }
           menu.finish().show().css({
             top: e.pageY + 'px',
@@ -1217,11 +1373,11 @@
           $('#existing-playlists').append('<li class="list-group-item text-center text-muted">Nenhuma lista criada.</li>');
         } else {
           userPlaylists.forEach(pl => {
-            $('#existing-playlists').append(`
-              <li class="list-group-item py-1 px-2 text-truncate choose-playlist" data-playlist-name="${pl.name}">
+            $('#existing-playlists').append(
+              `<li class="list-group-item py-1 px-2 text-truncate choose-playlist" data-playlist-name="${pl.name}">
                 ${pl.name}
-              </li>
-            `);
+              </li>`
+            );
           });
         }
         $('#choosePlaylistModal').modal('show');
@@ -1239,8 +1395,6 @@
       // ------------------------
       //  Eventos de Contexto para Playlists: Editar e Excluir
       // ------------------------
-
-      // Ajustar o menu de contexto para playlists
       $(document).on('contextmenu', '.playlist-item', function(e) {
         e.preventDefault();
         const playlistId = $(this).data('playlist-id');
@@ -1249,11 +1403,11 @@
 
         // Atualizar o menu de contexto com opções de Editar e Excluir
         const menu = $('#context-menu');
-        menu.empty(); // Limpa opções anteriores
-        menu.append(`
-          <a href="#" id="edit-playlist-option">Editar</a>
-          <a href="#" id="delete-playlist-option">Excluir</a>
-        `);
+        menu.empty();
+        menu.append(
+          `<a href="#" id="edit-playlist-option">Editar</a>
+           <a href="#" id="delete-playlist-option">Excluir</a>`
+        );
         menu.finish().show().css({
           top: e.pageY + 'px',
           left: e.pageX + 'px'
@@ -1265,7 +1419,6 @@
         e.preventDefault();
         $('#context-menu').hide();
 
-        // Preencher o campo de nome da playlist com o nome atual
         const playlistItem = $(`.playlist-item[data-playlist-id="${currentPlaylistId}"]`);
         const currentName = playlistItem.data('playlist-name');
         $('#edit-playlist-name').val(currentName);
@@ -1295,10 +1448,6 @@
               // Atualizar o nome na interface
               const playlistItem = $(`.playlist-item[data-playlist-id="${currentPlaylistId}"]`);
               playlistItem.data('playlist-name', newName).text(newName);
-              // Atualizar a lista de playlists se estiver exibida
-              if (currentCustomListName === playlistItem.data('playlist-name')) {
-                $('#playlist-panel h6').text('Minhas Listas');
-              }
               $('#editPlaylistModal').modal('hide');
               alert(response.message);
             } else {
@@ -1316,7 +1465,6 @@
         e.preventDefault();
         $('#context-menu').hide();
 
-        // Obter o nome da playlist para exibir na confirmação
         const playlistItem = $(`.playlist-item[data-playlist-id="${currentPlaylistId}"]`);
         const playlistName = playlistItem.data('playlist-name');
         $('#playlist-to-delete-name').text(playlistName);
@@ -1336,14 +1484,9 @@
           }),
           success: function(response) {
             if (response.status === 'success') {
-              // Remover a playlist da interface
               $(`.playlist-item[data-playlist-id="${currentPlaylistId}"]`).remove();
-              // Se a playlist estava sendo exibida, esconder a lista
-              const playlistName = $('#playlist-to-delete-name').text();
-              if (currentCustomListName === playlistName) {
-                $('.music-list').hide();
-                currentCustomListName = null;
-              }
+              $('.music-list').hide();
+              currentCustomListName = null;
               $('#confirmDeletePlaylistModal').modal('hide');
               alert(response.message);
             } else {
@@ -1359,8 +1502,6 @@
       // ------------------------
       //  Eventos de Contexto para Músicas: Excluir ou Remover
       // ------------------------
-
-      // Clique na opção "Excluir música" do menu de contexto de músicas
       $(document).on('click', '#delete-music-option', function(e) {
         e.preventDefault();
         $('#context-menu').hide();
@@ -1370,14 +1511,10 @@
           return;
         }
 
-        // Preencher o nome da música no modal de confirmação
         $('#music-to-delete-name').text(rightClickedMusic);
-
-        // Mostrar o modal de confirmação para excluir a música física
         $('#confirmDeleteMusicModal').modal('show');
       });
 
-      // Clique na opção "Remover da lista" do menu de contexto de músicas (quando em uma playlist)
       $(document).on('click', '#remove-music-option', function(e) {
         e.preventDefault();
         $('#context-menu').hide();
@@ -1387,10 +1524,7 @@
           return;
         }
 
-        // Preencher o nome da música no modal de confirmação
         $('#music-to-remove-name').text(rightClickedMusic);
-
-        // Mostrar o modal de confirmação para remover da lista
         $('#confirmRemoveMusicModal').modal('show');
       });
 
@@ -1405,9 +1539,7 @@
           }),
           success: function(response) {
             if (response.status === 'success') {
-              // Remover a música da interface
               $(`.list-group-item[data-musica="${rightClickedMusic}"]`).remove();
-              // Se a música estava sendo exibida, atualizar o player
               if (musicaAtual === rightClickedMusic) {
                 musicaAtual = null;
                 $('#player-song-title').text('Nenhuma música selecionada');
@@ -1418,19 +1550,18 @@
                 $('#download-button').attr('href', '#').attr('download', '');
                 $('.list-group-item').removeClass('selected');
                 updatePlayerFavoriteButton();
+                $('#play-pause-button i').removeClass("bi-pause-fill").addClass("bi-play-fill");
               }
-              // Atualizar favoritos se a música estava nos favoritos
               const favIndex = allFavoritos.indexOf(rightClickedMusic);
               if (favIndex > -1) {
                 allFavoritos.splice(favIndex, 1);
                 $('.favorites-list').find(`.song-link[data-musica="${rightClickedMusic}"]`).closest('li').remove();
                 if ($('.favorites-list').find('li').length === 0) {
-                  $('.favorites-list').append(`
-                    <li class="list-group-item text-center text-muted">Nenhum favorito adicionado.</li>
-                  `);
+                  $('.favorites-list').append(
+                    `<li class="list-group-item text-center text-muted">Nenhum favorito adicionado.</li>`
+                  );
                 }
               }
-              // Atualizar listas de reprodução se a música estava em alguma
               userPlaylists.forEach(pl => {
                 const musicIndex = pl.musicas.indexOf(rightClickedMusic);
                 if (musicIndex > -1) {
@@ -1460,9 +1591,7 @@
           }),
           success: function(response) {
             if (response.status === 'success') {
-              // Remover a música da interface
               $(`.list-group-item[data-musica="${rightClickedMusic}"]`).remove();
-              // Se a música estava sendo exibida, atualizar o player
               if (musicaAtual === rightClickedMusic) {
                 musicaAtual = null;
                 $('#player-song-title').text('Nenhuma música selecionada');
@@ -1473,19 +1602,18 @@
                 $('#download-button').attr('href', '#').attr('download', '');
                 $('.list-group-item').removeClass('selected');
                 updatePlayerFavoriteButton();
+                $('#play-pause-button i').removeClass("bi-pause-fill").addClass("bi-play-fill");
               }
-              // Atualizar favoritos se a música estava nos favoritos
               const favIndex = allFavoritos.indexOf(rightClickedMusic);
               if (favIndex > -1) {
                 allFavoritos.splice(favIndex, 1);
                 $('.favorites-list').find(`.song-link[data-musica="${rightClickedMusic}"]`).closest('li').remove();
                 if ($('.favorites-list').find('li').length === 0) {
-                  $('.favorites-list').append(`
-                    <li class="list-group-item text-center text-muted">Nenhum favorito adicionado.</li>
-                  `);
+                  $('.favorites-list').append(
+                    `<li class="list-group-item text-center text-muted">Nenhum favorito adicionado.</li>`
+                  );
                 }
               }
-              // Atualizar listas de reprodução se a música estava em alguma
               userPlaylists.forEach(pl => {
                 const musicIndex = pl.musicas.indexOf(rightClickedMusic);
                 if (musicIndex > -1) {
@@ -1505,41 +1633,55 @@
       });
 
       // ------------------------
-      //  Atualização de Favoritos na Pesquisa
+      //  Função para deletar música no servidor
       // ------------------------
-      function updateFavoriteStatusInSearch(musica, isFavorited) {
-        const favoriteSpan = $(`.search-results .favorite[data-musica="${musica}"]`);
-        if (isFavorited) {
-          favoriteSpan.addClass('favorited');
-          favoriteSpan.find('i').removeClass('bi-heart').addClass('bi-heart-fill');
-        } else {
-          favoriteSpan.removeClass('favorited');
-          favoriteSpan.find('i').removeClass('bi-heart-fill').addClass('bi-heart');
-        }
-      }
-
-      // Atualiza os favoritos na lista de pesquisa após alteração
-      function handleFavoriteInSearch(musica, responseStatus) {
-        if (responseStatus === "added") {
-          updateFavoriteStatusInSearch(musica, true);
-          allFavoritos.push(musica);
-        } else if (responseStatus === "removed") {
-          updateFavoriteStatusInSearch(musica, false);
-          const idx = allFavoritos.indexOf(musica);
-          if (idx > -1) {
-            allFavoritos.splice(idx, 1);
+      function deleteMusicFromServer(musica) {
+        $.ajax({
+          url: "{{ url_for('delete_music') }}",
+          method: "POST",
+          contentType: "application/json",
+          data: JSON.stringify({ musica: musica }),
+          success: function(response) {
+            if (response.status === 'success') {
+              $(`.list-group-item[data-musica="${musica}"]`).remove();
+              if (musicaAtual === musica) {
+                musicaAtual = null;
+                $('#player-song-title').text('Nenhuma música selecionada');
+                $('#player-artist').text('');
+                $('#audio-player source').attr('src', '');
+                $('#audio-player')[0].load();
+                $('#audio-player')[0].pause();
+                $('#download-button').attr('href', '#').attr('download', '');
+                $('.list-group-item').removeClass('selected');
+                updatePlayerFavoriteButton();
+                $('#play-pause-button i').removeClass("bi-pause-fill").addClass("bi-play-fill");
+              }
+              const favIndex = allFavoritos.indexOf(musica);
+              if (favIndex > -1) {
+                allFavoritos.splice(favIndex, 1);
+                $('.favorites-list').find(`.song-link[data-musica="${musica}"]`).closest('li').remove();
+                if ($('.favorites-list').find('li').length === 0) {
+                  $('.favorites-list').append(
+                    `<li class="list-group-item text-center text-muted">Nenhum favorito adicionado.</li>`
+                  );
+                }
+              }
+              userPlaylists.forEach(pl => {
+                const musicIndex = pl.musicas.indexOf(musica);
+                if (musicIndex > -1) {
+                  pl.musicas.splice(musicIndex, 1);
+                }
+              });
+              alert(response.message);
+            } else {
+              alert("Erro: " + response.message);
+            }
+          },
+          error: function(xhr) {
+            alert("Erro ao excluir música: " + xhr.responseText);
           }
-        }
-        atualizarPrevNext();
+        });
       }
-
-      // Manipulação de favoritos na pesquisa
-      $(document).on('click', '.search-results .favorite', function () {
-        const musica = $(this).data('musica');
-        const icon = $(this).find('i');
-        const button = $(this);
-        toggleFavoriteInServer(musica, icon, button);
-      });
 
       // ------------------------
       //  Função para Atualizar o Botão de Favorito no Player
@@ -1556,76 +1698,88 @@
         }
       }
 
-      // ------------------------
-      //  Atualizar o Botão de Favorito Sempre que a Música Muda
-      // ------------------------
-      $(document).on('click', '.song-link', function () {
-        updatePlayerFavoriteButton();
-      });
-
       // Atualizar o botão de favorito ao inicializar
       updatePlayerFavoriteButton();
 
       // ------------------------
-      //  Função para Atualizar o Nome da Playlist após Edição
+      //  Barra de Progresso
       // ------------------------
-      // Esta função já está incorporada na lógica de editar playlist acima
+      const audioPlayerElement = $('#audio-player')[0];
+      const progressBar = $('#progress-bar');
+      const currentTimeElement = $('#current-time');
+      const totalDurationElement = $('#total-duration');
+      const playPauseButton = $('#play-pause-button');
+      const playPauseIcon = playPauseButton.find('i');
 
-    });
+      audioPlayerElement.addEventListener('timeupdate', () => {
+        if (audioPlayerElement.duration) {
+          const currentTime = audioPlayerElement.currentTime;
+          const duration = audioPlayerElement.duration;
 
-    // Função para deletar música no servidor
-    function deleteMusicFromServer(musica) {
-      $.ajax({
-        url: "{{ url_for('delete_music') }}",
-        method: "POST",
-        contentType: "application/json",
-        data: JSON.stringify({ musica: musica }),
-        success: function(response) {
-          if (response.status === 'success') {
-            // Remover a música da interface
-            $(`.list-group-item[data-musica="${musica}"]`).remove();
-            // Se a música estava sendo exibida no player, atualizar o player
-            if (musicaAtual === musica) {
-              musicaAtual = null;
-              $('#player-song-title').text('Nenhuma música selecionada');
-              $('#player-artist').text('');
-              $('#audio-player source').attr('src', '');
-              $('#audio-player')[0].load();
-              $('#audio-player')[0].pause();
-              $('#download-button').attr('href', '#').attr('download', '');
-              $('.list-group-item').removeClass('selected');
-              updatePlayerFavoriteButton();
-            }
-            // Atualizar favoritos se a música estava nos favoritos
-            const favIndex = allFavoritos.indexOf(musica);
-            if (favIndex > -1) {
-              allFavoritos.splice(favIndex, 1);
-              $('.favorites-list').find(`.song-link[data-musica="${musica}"]`).closest('li').remove();
-              if ($('.favorites-list').find('li').length === 0) {
-                $('.favorites-list').append(`
-                  <li class="list-group-item text-center text-muted">Nenhum favorito adicionado.</li>
-                `);
-              }
-            }
-            // Atualizar listas de reprodução se a música estava em alguma
-            userPlaylists.forEach(pl => {
-              const musicIndex = pl.musicas.indexOf(musica);
-              if (musicIndex > -1) {
-                pl.musicas.splice(musicIndex, 1);
-              }
-            });
-            alert(response.message);
-          } else {
-            alert("Erro: " + response.message);
-          }
-        },
-        error: function(xhr) {
-          alert("Erro ao excluir música: " + xhr.responseText);
+          progressBar.val((currentTime / duration) * 100);
+          currentTimeElement.text(formatTime(currentTime));
+          totalDurationElement.text(formatTime(duration));
         }
       });
-    }
 
-    // Função para atualizar o botão de favorito no player
+      progressBar.on('input', function() {
+        const progress = $(this).val();
+        const duration = audioPlayerElement.duration;
+        audioPlayerElement.currentTime = (progress / 100) * duration;
+      });
+
+      audioPlayerElement.addEventListener('play', () => {
+        playPauseIcon.removeClass('bi-play-fill').addClass('bi-pause-fill');
+      });
+
+      audioPlayerElement.addEventListener('pause', () => {
+        playPauseIcon.removeClass('bi-pause-fill').addClass('bi-play-fill');
+      });
+
+      function formatTime(seconds) {
+        if (isNaN(seconds)) return '0:00';
+        const minutes = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${minutes}:${secs < 10 ? "0" : ""}${secs}`;
+      }
+
+      // ------------------------
+      //  Controle de Volume
+      // ------------------------
+      const volumeBar = $('#volume-bar');
+      volumeBar.val(100);
+      audioPlayerElement.volume = 1.0;
+
+      volumeBar.on('input', function() {
+        const volume = $(this).val();
+        audioPlayerElement.volume = volume / 100;
+      });
+
+      // -----------------------------------------------------
+      // Botão "Baixar toda a lista"
+      // -----------------------------------------------------
+      $('#download-all-button').click(function(){
+        if (isShowingFavorites) {
+          // Está nos favoritos
+          window.location.href = "/download_all?context=favorites";
+        } else if (currentCustomListName) {
+          // Está em uma playlist
+          window.location.href = "/download_all?context=playlist&playlistName=" + encodeURIComponent(currentCustomListName);
+        } else {
+          // Lista de músicas normal (todas)
+          window.location.href = "/download_all?context=all";
+        }
+      });
+
+      // -----------------------------------------------------
+      // Se a .favorites-list estiver visível (rota /favorites),
+      // define isShowingFavorites como true ao carregar:
+      // -----------------------------------------------------
+      if ($('.favorites-list').is(':visible')) {
+        isShowingFavorites = true;
+      }
+    });
+
     function updatePlayerFavoriteButton() {
       if (!musicaAtual) {
         $('#favorite-button i').removeClass('bi-heart-fill').addClass('bi-heart');
