@@ -9,11 +9,13 @@ import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext
 from flask import (
     Flask, render_template, request, redirect,
-    url_for, session, flash, send_from_directory, jsonify
+    url_for, session, flash, send_from_directory, jsonify, send_file
 )
 import logging
 import queue
 import requests  # Para enviar requisições HTTP para desligar o Flask
+from io import BytesIO
+import zipfile
 
 #############################################################################
 #                         CONFIGURAÇÃO DE LOG
@@ -1373,6 +1375,80 @@ def remove_music_from_list():
     except Exception as e:
         logger.error(f"Erro ao remover música das listas: {e}")
         return jsonify({'status': 'error', 'message': 'Erro ao remover música das listas.'}), 500
+
+#############################################################################
+#                  ROTA NOVA: BAIXAR TODA A LISTA (ZIP)
+#############################################################################
+
+@app.route('/download_all', methods=['GET'])
+def download_all():
+    """
+    Gera um arquivo ZIP contendo as músicas conforme o 'context':
+      - context=favorites       => todas as músicas favoritas
+      - context=playlist        => músicas da playlist especificada (via playlistName)
+      - context=all (ou nenhum) => todas as músicas do usuário
+    """
+    if 'usuario' not in session:
+        flash('Você precisa estar logado.', 'error')
+        return redirect(url_for('login'))
+
+    usuario = session['usuario']
+    diretorio_usuario = session['diretorio']
+    context = request.args.get('context')
+    playlist_name = request.args.get('playlistName', '')
+
+    if context == 'favorites':
+        # Favoritos
+        favorites = listar_favoritos(usuario)
+        files_to_zip = [
+            os.path.join(diretorio_usuario, f)
+            for f in favorites
+            if os.path.exists(os.path.join(diretorio_usuario, f))
+        ]
+        zip_name = 'favoritos.zip'
+    elif context == 'playlist':
+        # Playlist específica
+        p_id = get_playlist_id(usuario, playlist_name)
+        if p_id:
+            songs = listar_musicas_da_playlist(p_id)
+            files_to_zip = [
+                os.path.join(diretorio_usuario, f)
+                for f in songs
+                if os.path.exists(os.path.join(diretorio_usuario, f))
+            ]
+            if playlist_name:
+                zip_name = f"{playlist_name}.zip"
+            else:
+                zip_name = "playlist.zip"
+        else:
+            flash("Playlist não encontrada ou não pertence ao usuário!", "error")
+            return redirect(url_for('index'))
+    else:
+        # Todas as músicas
+        all_songs = [
+            f for f in os.listdir(diretorio_usuario)
+            if f.lower().endswith(('.mp3', '.wav', '.ogg'))
+        ]
+        files_to_zip = [os.path.join(diretorio_usuario, f) for f in all_songs]
+        zip_name = "todas_as_musicas.zip"
+
+    if not files_to_zip:
+        flash("Nenhuma música encontrada para download.", "info")
+        return redirect(url_for('index'))
+
+    memory_file = BytesIO()
+    with zipfile.ZipFile(memory_file, 'w') as zf:
+        for file_path in files_to_zip:
+            arcname = os.path.basename(file_path)
+            zf.write(file_path, arcname=arcname)
+    memory_file.seek(0)
+
+    return send_file(
+        memory_file,
+        as_attachment=True,
+        download_name=zip_name,
+        mimetype='application/zip'
+    )
 
 #############################################################################
 #                  ROTAS PARA DOWNLOADS
